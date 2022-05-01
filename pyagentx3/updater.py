@@ -54,7 +54,9 @@ class Updater(threading.Thread):
                     logger.error('Queue full')
                 except Exception as e:
                     logger.exception('Unhandled update exception')
-            time.sleep(0.1)
+            delayToWaitBeforeNextUpdateCall = self._freq - (time.time() - start_time)
+            if 0 < delayToWaitBeforeNextUpdateCall :
+                self.stop.wait(delayToWaitBeforeNextUpdateCall)
         logger.info('Updater stopping')
 
     # Override this
