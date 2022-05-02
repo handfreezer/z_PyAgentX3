@@ -38,23 +38,29 @@ class Updater(threading.Thread):
 
     def run(self):
         while True:
+            if self._freq <= 0:
+                logger.info('Updater [oid=%s] is planned to auto-update', self._oid)
+                self.stop.wait()
             if self.stop.is_set():
                 break
             logger.info('Updating : %s (%s)', self.__class__.__name__, self._oid)
             start_time = time.time()
-            self._data = {}
-            try:
-                self.update()
-                self._queue.put_nowait({'oid': self._oid,
-                                        'data': self._data})
-            except Full:
-                logger.error('Queue full')
-            except Exception as e:
-                logger.exception('Unhandled update exception')
+            self.run_update()
             delayToWaitBeforeNextUpdateCall = self._freq - (time.time() - start_time)
             if 0 < delayToWaitBeforeNextUpdateCall :
                 self.stop.wait(delayToWaitBeforeNextUpdateCall)
         logger.info('Updater stopping')
+
+    def run_update(self):
+        self._data = {}
+        try:
+            self.update()
+            self._queue.put_nowait({'oid': self._oid,
+                                    'data': self._data})
+        except Full:
+            logger.error('Queue full')
+        except Exception as e:
+            logger.exception('Unhandled update exception')
 
     # Override this
     def update(self):
